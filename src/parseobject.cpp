@@ -24,6 +24,7 @@
 
 #include <QDebug>
 #include <QDesktopServices>
+#include <QMap>
 #include <QTextDocumentFragment>
 #if defined(Q_OS_WIN)
 #include <windows.h>
@@ -1029,7 +1030,6 @@ void ParseObject::runUserFilter(int feedId, int filterId)
 
     QString qStr("UPDATE news SET");
     QString qStr1;
-    QString qStr2;
     QString whereStr;
     QList<int> idLabelsList;
     QStringList soundList;
@@ -1071,224 +1071,254 @@ void ParseObject::runUserFilter(int feedId, int filterId)
     else
       qStr.append(qStr1);
 
-    whereStr = QString(" WHERE feedId='%1' AND deleted=0").arg(feedId);
-
-    qStr2.clear();
+    QString connector;
     switch (filterType) {
     case 1: // Match all conditions
-      qStr2.append("AND ");
+      connector = "AND ";
       break;
     case 2: // Match any condition
-      qStr2.append("OR ");
+      connector = "OR ";
       break;
     }
 
+    // Collect condition clauses. A list condition (list=1) is expanded into
+    // one clause per line, joined with the same connector as the filter.
+    QStringList clauses;
     if ((filterType == 1) || (filterType == 2)) {
-      whereStr.append(" AND ( ");
-      qStr1.clear();
+      QSqlQuery qCond(db_);
+      qCond.exec(QString("SELECT field, condition, content, list FROM filterConditions "
+                         "WHERE idFilter=='%1' ORDER BY id").arg(filterId));
+      while (qCond.next()) {
+        int field = qCond.value(0).toInt();
+        int condition = qCond.value(1).toInt();
+        QString rawContent = qCond.value(2).toString();
+        bool isList = (qCond.value(3).toInt() == 1);
 
-      q1.exec(QString("SELECT field, condition, content FROM filterConditions "
-                      "WHERE idFilter=='%1'").arg(filterId));
-      while (q1.next()) {
-        if (!qStr1.isNull()) qStr1.append(qStr2);
-        QString content = q1.value(2).toString().replace("'", "''");
-        switch (q1.value(0).toInt()) {
-        case 0: // field -> Title
-          switch (q1.value(1).toInt()) {
-          case 0: // condition -> contains
-            qStr1.append(QString("UPPER(title) LIKE '%%1%' ").arg(content.toUpper()));
-            break;
-          case 1: // condition -> doesn't contain
-            qStr1.append(QString("UPPER(title) NOT LIKE '%%1%' ").arg(content.toUpper()));
-            break;
-          case 2: // condition -> is
-            qStr1.append(QString("UPPER(title) LIKE '%1' ").arg(content.toUpper()));
-            break;
-          case 3: // condition -> isn't
-            qStr1.append(QString("UPPER(title) NOT LIKE '%1' ").arg(content.toUpper()));
-            break;
-          case 4: // condition -> begins with
-            qStr1.append(QString("UPPER(title) LIKE '%1%' ").arg(content.toUpper()));
-            break;
-          case 5: // condition -> ends with
-            qStr1.append(QString("UPPER(title) LIKE '%%1' ").arg(content.toUpper()));
-            break;
-          case 6: // condition -> regExp
-            qStr1.append(QString("title REGEXP '%1' ").arg(content));
-            break;
+        QStringList contents;
+        if (isList) {
+          QStringList lines = rawContent.split('\n');
+          foreach (const QString &line, lines) {
+            QString item = line.trimmed();
+            if (!item.isEmpty() && !contents.contains(item))
+              contents.append(item);
           }
-          break;
-        case 1: // field -> Description
-          switch (q1.value(1).toInt()) {
-          case 0: // condition -> contains
-            qStr1.append(QString("UPPER(description) LIKE '%%1%' ").arg(content.toUpper()));
-            break;
-          case 1: // condition -> doesn't contain
-            qStr1.append(QString("UPPER(description) NOT LIKE '%%1%' ").arg(content.toUpper()));
-            break;
-          case 2: // condition -> regExp
-            qStr1.append(QString("description REGEXP '%1' ").arg(content));
-            break;
-          }
-          break;
-        case 2: // field -> Author
-          switch (q1.value(1).toInt()) {
-          case 0: // condition -> contains
-            qStr1.append(QString("UPPER(author_name) LIKE '%%1%' ").arg(content.toUpper()));
-            break;
-          case 1: // condition -> doesn't contain
-            qStr1.append(QString("UPPER(author_name) NOT LIKE '%%1%' ").arg(content.toUpper()));
-            break;
-          case 2: // condition -> is
-            qStr1.append(QString("UPPER(author_name) LIKE '%1' ").arg(content.toUpper()));
-            break;
-          case 3: // condition -> isn't
-            qStr1.append(QString("UPPER(author_name) NOT LIKE '%1' ").arg(content.toUpper()));
-            break;
-          case 4: // condition -> regExp
-            qStr1.append(QString("author_name REGEXP '%1' ").arg(content));
-            break;
-          }
-          break;
-        case 3: // field -> Category
-          switch (q1.value(1).toInt()) {
-          case 0: // condition -> contains
-            qStr1.append(QString("UPPER(category) LIKE '%%1%' ").arg(content.toUpper()));
-            break;
-          case 1: // condition -> doesn't contain
-            qStr1.append(QString("UPPER(category) NOT LIKE '%%1%' ").arg(content.toUpper()));
-            break;
-          case 2: // condition -> is
-            qStr1.append(QString("UPPER(category) LIKE '%1' ").arg(content.toUpper()));
-            break;
-          case 3: // condition -> isn't
-            qStr1.append(QString("UPPER(category) NOT LIKE '%1' ").arg(content.toUpper()));
-            break;
-          case 4: // condition -> begins with
-            qStr1.append(QString("UPPER(category) LIKE '%1%' ").arg(content.toUpper()));
-            break;
-          case 5: // condition -> ends with
-            qStr1.append(QString("UPPER(category) LIKE '%%1' ").arg(content.toUpper()));
-            break;
-          case 6: // condition -> regExp
-            qStr1.append(QString("category REGEXP '%1' ").arg(content));
-            break;
-          }
-          break;
-        case 4: // field -> Status
-          if (q1.value(1).toInt() == 0) { // Status -> is
-            switch (q1.value(2).toInt()) {
-            case 0:
-              qStr1.append("new==1 ");
-              break;
-            case 1:
-              qStr1.append("read>=1 ");
-              break;
-            case 2:
-              qStr1.append("starred==1 ");
-              break;
-            }
-          } else { // Status -> isn't
-            switch (q1.value(2).toInt()) {
-            case 0:
-              qStr1.append("new==0 ");
-              break;
-            case 1:
-              qStr1.append("read==0 ");
-              break;
-            case 2:
-              qStr1.append("starred==0 ");
-              break;
-            }
-          }
-          break;
-        case 5: // field -> Link
-          switch (q1.value(1).toInt()) {
-          case 0: // condition -> contains
-            qStr1.append(QString("link_href LIKE '%%1%' ").arg(content));
-            break;
-          case 1: // condition -> doesn't contain
-            qStr1.append(QString("link_href NOT LIKE '%%1%' ").arg(content));
-            break;
-          case 2: // condition -> is
-            qStr1.append(QString("link_href LIKE '%1' ").arg(content));
-            break;
-          case 3: // condition -> isn't
-            qStr1.append(QString("link_href NOT LIKE '%1' ").arg(content));
-            break;
-          case 4: // condition -> begins with
-            qStr1.append(QString("link_href LIKE '%1%' ").arg(content));
-            break;
-          case 5: // condition -> ends with
-            qStr1.append(QString("link_href LIKE '%%1' ").arg(content));
-            break;
-          case 6: // condition -> regExp
-            qStr1.append(QString("link_href REGEXP '%1' ").arg(content));
-            break;
-          }
-          break;
-        case 6: // field -> News
-          switch (q1.value(1).toInt()) {
-          case 0: // condition -> contains
-            qStr1.append(QString("(UPPER(title) LIKE '%%1%' OR UPPER(description) LIKE '%%1%') ").arg(content.toUpper()));
-            break;
-          case 1: // condition -> doesn't contain
-            qStr1.append(QString("(UPPER(title) NOT LIKE '%%1%' OR UPPER(description) NOT LIKE '%%1%') ").arg(content.toUpper()));
-            break;
-          case 2: // condition -> regExp
-            qStr1.append(QString("(title REGEXP '%1' OR description REGEXP '%1') ").arg(content));
-            break;
-          }
-          break;
+        } else {
+          contents.append(rawContent);
+        }
+
+        foreach (const QString &item, contents) {
+          QString clause = filterClause(field, condition, item);
+          if (!clause.isEmpty())
+            clauses.append(clause);
         }
       }
-      whereStr.append(qStr1).append(")");
     }
 
-    if (q1.exec(QString("SELECT id, label FROM news").append(whereStr))) {
-      QSqlQuery q2(db_);
-      bool isPlaySound = false;
+    whereStr = QString(" WHERE feedId='%1' AND deleted=0").arg(feedId);
 
-      while (q1.next()) {
-        if (!qStr.isEmpty()) {
-          qStr1 = qStr % QString(" WHERE id='%1'").arg(q1.value(0).toInt());
-          if (!q2.exec(qStr1)) {
-            qWarning() << __PRETTY_FUNCTION__ << __LINE__
-                       << "q.lastError(): " << q2.lastError().text();
-          }
+    // Find matching rows. Long condition lists are split into chunks to stay
+    // below the SQLite expression depth limit (default is about 1000).
+    QMap<int, QString> matchedRows; // news id -> label
+    const int kMaxClausesPerQuery = 200;
+
+    if (clauses.isEmpty()) {
+      if (filterType != 2) {
+        QSqlQuery qNews(db_);
+        QString queryStr = "SELECT id, label FROM news";
+        queryStr.append(whereStr);
+        if (qNews.exec(queryStr)) {
+          while (qNews.next())
+            matchedRows.insert(qNews.value(0).toInt(), qNews.value(1).toString());
+        } else {
+          qWarning() << __PRETTY_FUNCTION__ << __LINE__
+                     << "q.lastError(): " << qNews.lastError().text();
         }
-
-        if (!idLabelsList.isEmpty()) {
-          QString idLabelsStr = q1.value(1).toString();
-          foreach (int idLabel, idLabelsList) {
-            if (idLabelsStr.contains(QString(",%1,").arg(idLabel))) continue;
-            if (idLabelsStr.isEmpty()) idLabelsStr.append(",");
-            idLabelsStr.append(QString("%1,").arg(idLabel));
-
-          }
-          qStr1 = QString("UPDATE news SET label='%1' WHERE id='%2'").arg(idLabelsStr).
-              arg(q1.value(0).toInt());
-          if (!q2.exec(qStr1)) {
-            qWarning() << __PRETTY_FUNCTION__ << __LINE__
-                       << "q.lastError(): " << q2.lastError().text();
-          }
-        }
-
-        if (!colorList.isEmpty()) {
-          emit signalAddColorList(q1.value(0).toInt(), colorList.at(0));
-        }
-
-        isPlaySound = true;
       }
+    } else if (clauses.count() <= kMaxClausesPerQuery) {
+      QString conditionStr = " AND ( ";
+      conditionStr.append(clauses.join(connector));
+      conditionStr.append(")");
 
-      if (isPlaySound && !soundList.isEmpty())
-        emit signalPlaySound(soundList.at(0));
+      QSqlQuery qNews(db_);
+      QString queryStr = "SELECT id, label FROM news";
+      queryStr.append(whereStr);
+      queryStr.append(conditionStr);
+      if (qNews.exec(queryStr)) {
+        while (qNews.next())
+          matchedRows.insert(qNews.value(0).toInt(), qNews.value(1).toString());
+      } else {
+        qWarning() << __PRETTY_FUNCTION__ << __LINE__
+                   << "q.lastError(): " << qNews.lastError().text();
+      }
     } else {
-      qWarning() << __PRETTY_FUNCTION__ << __LINE__
-                 << "q.lastError(): " << q1.lastError().text();
+      bool firstChunk = true;
+      for (int start = 0; start < clauses.count(); start += kMaxClausesPerQuery) {
+        QStringList chunk = clauses.mid(start, kMaxClausesPerQuery);
+        QString conditionStr = " AND ( ";
+        conditionStr.append(chunk.join(connector));
+        conditionStr.append(")");
+
+        QMap<int, QString> chunkRows;
+        QSqlQuery qNews(db_);
+        QString queryStr = "SELECT id, label FROM news";
+        queryStr.append(whereStr);
+        queryStr.append(conditionStr);
+        if (qNews.exec(queryStr)) {
+          while (qNews.next())
+            chunkRows.insert(qNews.value(0).toInt(), qNews.value(1).toString());
+        } else {
+          qWarning() << __PRETTY_FUNCTION__ << __LINE__
+                     << "q.lastError(): " << qNews.lastError().text();
+        }
+
+        if (firstChunk) {
+          matchedRows = chunkRows;
+          firstChunk = false;
+        } else if (filterType == 1) {
+          // AND: a row must satisfy every chunk
+          QMap<int, QString>::iterator it = matchedRows.begin();
+          while (it != matchedRows.end()) {
+            if (!chunkRows.contains(it.key()))
+              it = matchedRows.erase(it);
+            else
+              ++it;
+          }
+        } else {
+          // OR: a row satisfying any chunk
+          QMap<int, QString>::const_iterator chunkIt = chunkRows.constBegin();
+          for (; chunkIt != chunkRows.constEnd(); ++chunkIt)
+            matchedRows.insert(chunkIt.key(), chunkIt.value());
+        }
+      }
     }
 
+    QSqlQuery q2(db_);
+    bool isPlaySound = false;
+
+    QMap<int, QString>::const_iterator rowIt = matchedRows.constBegin();
+    for (; rowIt != matchedRows.constEnd(); ++rowIt) {
+      int newsId = rowIt.key();
+
+      if (!qStr.isEmpty()) {
+        qStr1 = qStr % QString(" WHERE id='%1'").arg(newsId);
+        if (!q2.exec(qStr1)) {
+          qWarning() << __PRETTY_FUNCTION__ << __LINE__
+                     << "q.lastError(): " << q2.lastError().text();
+        }
+      }
+
+      if (!idLabelsList.isEmpty()) {
+        QString idLabelsStr = rowIt.value();
+        foreach (int idLabel, idLabelsList) {
+          if (idLabelsStr.contains(QString(",%1,").arg(idLabel))) continue;
+          if (idLabelsStr.isEmpty()) idLabelsStr.append(",");
+          idLabelsStr.append(QString("%1,").arg(idLabel));
+        }
+        qStr1 = QString("UPDATE news SET label='%1' WHERE id='%2'").
+            arg(idLabelsStr).arg(newsId);
+        if (!q2.exec(qStr1)) {
+          qWarning() << __PRETTY_FUNCTION__ << __LINE__
+                     << "q.lastError(): " << q2.lastError().text();
+        }
+      }
+
+      if (!colorList.isEmpty())
+        emit signalAddColorList(newsId, colorList.at(0));
+
+      isPlaySound = true;
+    }
+
+    if (isPlaySound && !soundList.isEmpty())
+      emit signalPlaySound(soundList.at(0));
   }
+}
+
+QString ParseObject::filterClause(int field, int condition,
+                                  const QString &rawContent) const
+{
+  QString content = rawContent;
+  content.replace("'", "''");
+
+  switch (field) {
+  case 0: // field -> Title
+    switch (condition) {
+    case 0: return QString("UPPER(title) LIKE '%%1%' ").arg(content.toUpper());
+    case 1: return QString("UPPER(title) NOT LIKE '%%1%' ").arg(content.toUpper());
+    case 2: return QString("UPPER(title) LIKE '%1' ").arg(content.toUpper());
+    case 3: return QString("UPPER(title) NOT LIKE '%1' ").arg(content.toUpper());
+    case 4: return QString("UPPER(title) LIKE '%1%' ").arg(content.toUpper());
+    case 5: return QString("UPPER(title) LIKE '%%1' ").arg(content.toUpper());
+    case 6: return QString("title REGEXP '%1' ").arg(content);
+    }
+    break;
+  case 1: // field -> Description
+    switch (condition) {
+    case 0: return QString("UPPER(description) LIKE '%%1%' ").arg(content.toUpper());
+    case 1: return QString("UPPER(description) NOT LIKE '%%1%' ").arg(content.toUpper());
+    case 2: return QString("description REGEXP '%1' ").arg(content);
+    }
+    break;
+  case 2: // field -> Author
+    switch (condition) {
+    case 0: return QString("UPPER(author_name) LIKE '%%1%' ").arg(content.toUpper());
+    case 1: return QString("UPPER(author_name) NOT LIKE '%%1%' ").arg(content.toUpper());
+    case 2: return QString("UPPER(author_name) LIKE '%1' ").arg(content.toUpper());
+    case 3: return QString("UPPER(author_name) NOT LIKE '%1' ").arg(content.toUpper());
+    case 4: return QString("author_name REGEXP '%1' ").arg(content);
+    }
+    break;
+  case 3: // field -> Category
+    switch (condition) {
+    case 0: return QString("UPPER(category) LIKE '%%1%' ").arg(content.toUpper());
+    case 1: return QString("UPPER(category) NOT LIKE '%%1%' ").arg(content.toUpper());
+    case 2: return QString("UPPER(category) LIKE '%1' ").arg(content.toUpper());
+    case 3: return QString("UPPER(category) NOT LIKE '%1' ").arg(content.toUpper());
+    case 4: return QString("UPPER(category) LIKE '%1%' ").arg(content.toUpper());
+    case 5: return QString("UPPER(category) LIKE '%%1' ").arg(content.toUpper());
+    case 6: return QString("category REGEXP '%1' ").arg(content);
+    }
+    break;
+  case 4: // field -> Status
+    if (condition == 0) { // Status -> is
+      switch (rawContent.toInt()) {
+      case 0: return "new==1 ";
+      case 1: return "read>=1 ";
+      case 2: return "starred==1 ";
+      }
+    } else { // Status -> isn't
+      switch (rawContent.toInt()) {
+      case 0: return "new==0 ";
+      case 1: return "read==0 ";
+      case 2: return "starred==0 ";
+      }
+    }
+    break;
+  case 5: // field -> Link
+    switch (condition) {
+    case 0: return QString("link_href LIKE '%%1%' ").arg(content);
+    case 1: return QString("link_href NOT LIKE '%%1%' ").arg(content);
+    case 2: return QString("link_href LIKE '%1' ").arg(content);
+    case 3: return QString("link_href NOT LIKE '%1' ").arg(content);
+    case 4: return QString("link_href LIKE '%1%' ").arg(content);
+    case 5: return QString("link_href LIKE '%%1' ").arg(content);
+    case 6: return QString("link_href REGEXP '%1' ").arg(content);
+    }
+    break;
+  case 6: // field -> News
+    switch (condition) {
+    case 0:
+      return QString("(UPPER(title) LIKE '%%1%' OR UPPER(description) LIKE '%%1%') ").
+          arg(content.toUpper());
+    case 1:
+      return QString("(UPPER(title) NOT LIKE '%%1%' AND UPPER(description) NOT LIKE '%%1%') ").
+          arg(content.toUpper());
+    case 2:
+      return QString("(title REGEXP '%1' OR description REGEXP '%1') ").arg(content);
+    }
+    break;
+  }
+
+  return QString();
 }
 
 /** @brief Update feed counts and all its parent categories

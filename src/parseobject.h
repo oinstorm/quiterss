@@ -109,6 +109,7 @@ private:
   QString parseDate(const QString &dateString, const QString &urlString);
   int recountFeedCounts(int feedId, const QString &feedUrl,
                         const QString &updated, const QString &lastBuildDate);
+  QString filterClause(int field, int condition, const QString &content) const;
 
   QSqlDatabase db_;
   QTimer *parseTimer_;

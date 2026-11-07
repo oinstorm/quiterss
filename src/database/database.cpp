@@ -26,7 +26,7 @@
 
 #include <sqlite3.h>
 
-const int versionDB = 17;
+const int versionDB = 18;
 
 const QString kCreateFeedsTableQuery(
     "CREATE TABLE feeds("
@@ -181,7 +181,8 @@ const QString kCreateFilterConditionsTable(
     "idFilter int, "            // filter Id
     "field varchar, "           // field to filter by
     "condition varchar, "       // condition has applied to filed
-    "content varchar "          // field content that is used by filter
+    "content varchar, "         // field content that is used by filter
+    "list integer default 0 "   // 1 - content is a newline-separated list; 0 - single value
     ")");
 
 const QString kCreateFilterActionsTable(
@@ -324,6 +325,10 @@ void Database::prepareDatabase()
           q.exec("ALTER table feeds ADD COLUMN SingleClickAction integer default 0");
           q.exec("ALTER table feeds ADD COLUMN DoubleClickAction integer default 0");
           q.exec("ALTER table feeds ADD COLUMN MiddleClickAction integer default 0");
+        }
+
+        if (dbVersion < 18) {
+          q.exec("ALTER TABLE filterConditions ADD COLUMN list integer default 0");
         }
 
         // Update appVersion anyway
