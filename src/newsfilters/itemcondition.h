@@ -39,17 +39,29 @@ public:
   LineEdit *lineEdit_;
 
   ToolButton *addButton_;
+  ToolButton *editButton_;
+
+  bool isListMode() const { return listMode_; }
+  int itemCount() const;
+  QString content() const;
+  void setContent(const QString &content, bool list);
 
 signals:
   void signalDeleteCondition(ItemCondition *item);
+  void signalConditionChanged();
 
 private slots:
   void deleteFilterRules();
   void currentIndexChanged(const QString &str);
+  void editContent();
+  void updateListSummary();
 
 private:
   ToolButton *deleteButton_;
+  QLabel *listSummary_;
 
+  bool listMode_;
+  QString listContent_;
 };
 
 #endif // ITEMCONDITION_H

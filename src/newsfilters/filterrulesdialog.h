@@ -39,6 +39,7 @@ private slots:
   void acceptDialog();
 
   void filterNameChanged(const QString &text);
+  void filterChanged();
 
   ItemCondition *addCondition();
   void deleteCondition(ItemCondition *item);

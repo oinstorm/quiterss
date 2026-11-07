@@ -262,8 +262,8 @@ void FilterRulesDialog::setData()
     }
     itemNotChecked_ = false;
 
-    qStr = QString("SELECT field, condition, content "
-                   "FROM filterConditions WHERE idFilter=='%1' ORDER BY content").
+    qStr = QString("SELECT field, condition, content, list "
+                   "FROM filterConditions WHERE idFilter=='%1' ORDER BY id").
         arg(filterId_);
     q.exec(qStr);
     while (q.next()) {
@@ -273,7 +273,7 @@ void FilterRulesDialog::setData()
       if (q.value(0).toInt() == 4)
         itemCondition->comboBox3_->setCurrentIndex(q.value(2).toInt());
       else
-        itemCondition->lineEdit_->setText(q.value(2).toString());
+        itemCondition->setContent(q.value(2).toString(), q.value(3).toInt() == 1);
     }
     if (conditionLayout_->count() == 0)
       addCondition();
@@ -322,9 +322,13 @@ void FilterRulesDialog::acceptDialog()
     for (int i = 0; i < conditionLayout_->count()-2; i++) {
       ItemCondition *itemCondition =
           qobject_cast<ItemCondition*>(conditionLayout_->itemAt(i)->widget());
-      if ((itemCondition->comboBox1_->currentIndex() != 4) &&
-          itemCondition->lineEdit_->text().isEmpty()) {
-        itemCondition->lineEdit_->setFocus();
+      if (itemCondition->comboBox1_->currentIndex() == 4)
+        continue;
+      if (itemCondition->content().isEmpty()) {
+        if (itemCondition->isListMode())
+          itemCondition->editButton_->setFocus();
+        else
+          itemCondition->lineEdit_->setFocus();
         textWarning_->setText(tr("Please enter search condition for the news filter."));
         warningWidget_->setVisible(true);
         return;
@@ -363,16 +367,19 @@ void FilterRulesDialog::acceptDialog()
       ItemCondition *itemCondition =
           qobject_cast<ItemCondition*>(conditionLayout_->itemAt(i)->widget());
       qStr = QString("INSERT INTO filterConditions "
-                     "(idFilter, field, condition, content) "
-                     "VALUES (?, ?, ?, ?)");
+                     "(idFilter, field, condition, content, list) "
+                     "VALUES (?, ?, ?, ?, ?)");
       q.prepare(qStr);
       q.addBindValue(filterId_);
       q.addBindValue(itemCondition->comboBox1_->currentIndex());
       q.addBindValue(itemCondition->comboBox2_->currentIndex());
-      if (itemCondition->comboBox1_->currentIndex() == 4)
+      if (itemCondition->comboBox1_->currentIndex() == 4) {
         q.addBindValue(itemCondition->comboBox3_->currentIndex());
-      else
-        q.addBindValue(itemCondition->lineEdit_->text());
+        q.addBindValue(0);
+      } else {
+        q.addBindValue(itemCondition->content());
+        q.addBindValue(itemCondition->isListMode() ? 1 : 0);
+      }
       q.exec();
     }
 
@@ -410,16 +417,19 @@ void FilterRulesDialog::acceptDialog()
       ItemCondition *itemCondition =
           qobject_cast<ItemCondition*>(conditionLayout_->itemAt(i)->widget());
       QString qStr = QString("INSERT INTO filterConditions "
-                             "(idFilter, field, condition, content) "
-                             "VALUES (?, ?, ?, ?)");
+                             "(idFilter, field, condition, content, list) "
+                             "VALUES (?, ?, ?, ?, ?)");
       q.prepare(qStr);
       q.addBindValue(filterId_);
       q.addBindValue(itemCondition->comboBox1_->currentIndex());
       q.addBindValue(itemCondition->comboBox2_->currentIndex());
-      if (itemCondition->comboBox1_->currentIndex() == 4)
+      if (itemCondition->comboBox1_->currentIndex() == 4) {
         q.addBindValue(itemCondition->comboBox3_->currentIndex());
-      else
-        q.addBindValue(itemCondition->lineEdit_->text());
+        q.addBindValue(0);
+      } else {
+        q.addBindValue(itemCondition->content());
+        q.addBindValue(itemCondition->isListMode() ? 1 : 0);
+      }
       q.exec();
     }
 
@@ -447,6 +457,11 @@ void FilterRulesDialog::acceptDialog()
 }
 
 void FilterRulesDialog::filterNameChanged(const QString &)
+{
+  warningWidget_->setVisible(false);
+}
+
+void FilterRulesDialog::filterChanged()
 {
   warningWidget_->setVisible(false);
 }
@@ -509,6 +524,8 @@ ItemCondition *FilterRulesDialog::addCondition()
           this, SLOT(filterNameChanged(QString)));
   connect(itemCondition->comboBox1_, SIGNAL(currentIndexChanged(QString)),
           this, SLOT(filterNameChanged(QString)));
+  connect(itemCondition, SIGNAL(signalConditionChanged()),
+          this, SLOT(filterChanged()));
   return itemCondition;
 }
 

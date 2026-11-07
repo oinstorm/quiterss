@@ -17,8 +17,11 @@
 * ============================================================ */
 #include "itemcondition.h"
 
+#include "conditioncontentdialog.h"
+
 ItemCondition::ItemCondition(QWidget * parent)
   : QWidget(parent)
+  , listMode_(false)
 {
   comboBox1_ = new QComboBox(this);
   comboBox2_ = new QComboBox(this);
@@ -36,7 +39,14 @@ ItemCondition::ItemCondition(QWidget * parent)
   itemList << tr("New") << tr("Read") << tr("Starred");
   comboBox3_->addItems(itemList);
 
-  currentIndexChanged(tr("Title"));
+  listSummary_ = new QLabel(this);
+  listSummary_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  listSummary_->setVisible(false);
+
+  editButton_ = new ToolButton(this);
+  editButton_->setText("...");
+  editButton_->setToolTip(tr("Edit content in a large editor"));
+  editButton_->setAutoRaise(true);
 
   addButton_ = new ToolButton(this);
   addButton_->setIcon(QIcon(":/images/addT"));
@@ -55,12 +65,17 @@ ItemCondition::ItemCondition(QWidget * parent)
   buttonsLayout->addWidget(comboBox2_);
   buttonsLayout->addWidget(comboBox3_, 1);
   buttonsLayout->addWidget(lineEdit_, 1);
+  buttonsLayout->addWidget(listSummary_, 1);
+  buttonsLayout->addWidget(editButton_);
   buttonsLayout->addWidget(addButton_);
   buttonsLayout->addWidget(deleteButton_);
 
   setLayout(buttonsLayout);
 
+  currentIndexChanged(tr("Title"));
+
   connect(deleteButton_, SIGNAL(clicked()), this, SLOT(deleteFilterRules()));
+  connect(editButton_, SIGNAL(clicked()), this, SLOT(editContent()));
   connect(comboBox1_, SIGNAL(currentIndexChanged(QString)),
           this, SLOT(currentIndexChanged(QString)));
 }
@@ -76,7 +91,16 @@ void ItemCondition::currentIndexChanged(const QString &str)
 
   comboBox2_->clear();
   comboBox3_->setVisible(false);
-  lineEdit_->setVisible(true);
+  if (str == tr("State")) {
+    itemList << tr("is") << tr("isn't");
+    comboBox2_->addItems(itemList);
+    comboBox3_->setVisible(true);
+    lineEdit_->setVisible(false);
+    listSummary_->setVisible(false);
+    editButton_->setVisible(false);
+    return;
+  }
+
   if (str == tr("Title")) {
     itemList << tr("contains") << tr("doesn't contain")
              << tr("is") << tr("isn't")
@@ -98,11 +122,6 @@ void ItemCondition::currentIndexChanged(const QString &str)
              << tr("begins with") << tr("ends with")
              << tr("Regular expressions");
     comboBox2_->addItems(itemList);
-  } else if (str == tr("State")) {
-    itemList << tr("is") << tr("isn't");
-    comboBox2_->addItems(itemList);
-    comboBox3_->setVisible(true);
-    lineEdit_->setVisible(false);
   } else if (str == tr("Link")) {
     itemList << tr("contains") << tr("doesn't contain")
              << tr("is") << tr("isn't")
@@ -113,13 +132,80 @@ void ItemCondition::currentIndexChanged(const QString &str)
     itemList << tr("contains") << tr("doesn't contain")
              << tr("Regular expressions");
     comboBox2_->addItems(itemList);
-  } /*else if (str == "Published") {
-    itemList << tr("is") << tr("isn't")
-             << tr("is before") << tr("is after");
-    comboBox2->addItems(itemList);
-  } else if (str == "Received") {
-    itemList << tr("is") << tr("isn't")
-             << tr("is before") << tr("is after");
-    comboBox2->addItems(itemList);
-  }*/
+  }
+
+  if (listMode_) {
+    lineEdit_->setVisible(false);
+    listSummary_->setVisible(true);
+  } else {
+    lineEdit_->setVisible(true);
+    listSummary_->setVisible(false);
+  }
+  editButton_->setVisible(true);
+}
+
+int ItemCondition::itemCount() const
+{
+  return listContent_.split('\n', QString::SkipEmptyParts).count();
+}
+
+QString ItemCondition::content() const
+{
+  if (listMode_) return listContent_;
+  return lineEdit_->text();
+}
+
+void ItemCondition::setContent(const QString &content, bool list)
+{
+  listMode_ = list;
+  if (list) {
+    QStringList items;
+    QStringList lines = content.split('\n', QString::SkipEmptyParts);
+    foreach (const QString &line, lines) {
+      QString item = line.trimmed();
+      if (item.isEmpty() || items.contains(item)) continue;
+      items.append(item);
+    }
+    listContent_ = items.join("\n");
+  } else {
+    listContent_.clear();
+    lineEdit_->setText(content);
+  }
+  if (comboBox1_->currentIndex() == 4) {
+    lineEdit_->setVisible(false);
+    listSummary_->setVisible(false);
+    editButton_->setVisible(false);
+  } else if (listMode_) {
+    lineEdit_->setVisible(false);
+    listSummary_->setVisible(true);
+  } else {
+    lineEdit_->setVisible(true);
+    listSummary_->setVisible(false);
+  }
+  updateListSummary();
+}
+
+void ItemCondition::updateListSummary()
+{
+  int n = itemCount();
+  listSummary_->setText(tr("%1 items").arg(n));
+  if (n > 0) {
+    QStringList items = listContent_.split('\n', QString::SkipEmptyParts);
+    QStringList previewItems = items.mid(0, 3);
+    QString preview = previewItems.join("; ");
+    if (items.count() > 3) preview.append("...");
+    listSummary_->setToolTip(preview);
+  } else {
+    listSummary_->setToolTip(tr("Empty list"));
+  }
+}
+
+void ItemCondition::editContent()
+{
+  ConditionContentDialog dlg(this, comboBox1_->currentText(),
+                             comboBox2_->currentText(), listMode_, content());
+  if (dlg.exec() == QDialog::Accepted) {
+    setContent(dlg.content(), dlg.isListMode());
+    emit signalConditionChanged();
+  }
 }

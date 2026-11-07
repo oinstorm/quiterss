@@ -115,6 +115,7 @@ HEADERS += \
     src/common/toolbutton.h \
     src/newsfilters/filterrulesdialog.h \
     src/newsfilters/newsfiltersdialog.h \
+    src/newsfilters/conditioncontentdialog.h \
     src/newsfilters/itemcondition.h \
     src/newsfilters/itemaction.h \
     src/network/sslerrordialog.h \
@@ -186,6 +187,7 @@ SOURCES += \
     src/common/toolbutton.cpp \
     src/newsfilters/filterrulesdialog.cpp \
     src/newsfilters/newsfiltersdialog.cpp \
+    src/newsfilters/conditioncontentdialog.cpp \
     src/newsfilters/itemcondition.cpp \
     src/newsfilters/itemaction.cpp \
     src/network/sslerrordialog.cpp \
