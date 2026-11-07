@@ -1,0 +1,79 @@
+name: build
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    name: Build (Linux Qt5 + WebKit)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            qtbase5-dev qtbase5-dev-tools qttools5-dev-tools \
+            libqt5webkit5-dev qtmultimedia5-dev libsqlite3-dev
+
+      - name: Build
+        run: |
+          mkdir -p _build
+          cd _build
+          qmake CONFIG+=release PREFIX=/usr ../QuiteRSS.pro
+          make -j"$(nproc)"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: quiterss-linux-x86_64
+          path: _build/release/target/*
+
+  build-windows:
+    name: Build (Windows MSYS2 Qt5 + WebKit)
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-qt5-base
+            mingw-w64-x86_64-qt5-tools
+            mingw-w64-x86_64-qtwebkit
+            mingw-w64-x86_64-sqlite3
+
+      - name: Build
+        shell: msys2 {0}
+        run: |
+          mkdir -p _build
+          cd _build
+          qmake-qt5 CONFIG+=release QMAKE_LRELEASE=/mingw64/bin/lrelease-qt5 ../QuiteRSS.pro
+          mingw32-make -j"$(nproc)"
+
+      - name: Package
+        shell: msys2 {0}
+        run: |
+          mkdir -p dist
+          cp _build/release/target/QuiteRSS.exe dist/
+          windeployqt-qt5 --release dist/QuiteRSS.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: quiterss-windows-x86_64
+          path: dist
