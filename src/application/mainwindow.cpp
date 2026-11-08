@@ -1005,12 +1005,12 @@ void MainWindow::createActions()
 
   setNewsFiltersAct_ = new QAction(this);
   setNewsFiltersAct_->setObjectName("setNewsFiltersAct");
-  setNewsFiltersAct_->setIcon(QIcon(":/images/filterOff"));
+  setNewsFiltersAct_->setIcon(QIcon(":/images/filterRules"));
   this->addAction(setNewsFiltersAct_);
   connect(setNewsFiltersAct_, SIGNAL(triggered()), this, SLOT(showNewsFiltersDlg()));
   setFilterNewsAct_ = new QAction(this);
   setFilterNewsAct_->setObjectName("setFilterNewsAct");
-  setFilterNewsAct_->setIcon(QIcon(":/images/filterOff"));
+  setFilterNewsAct_->setIcon(QIcon(":/images/filterRules"));
   this->addAction(setFilterNewsAct_);
   connect(setFilterNewsAct_, SIGNAL(triggered()), this, SLOT(showFilterRulesDlg()));
 
@@ -4900,6 +4900,7 @@ void MainWindow::retranslateStrings()
   showCleanUpWizardAct_->setText(tr("Clean Up..."));
 
   setNewsFiltersAct_->setText(tr("News Filters..."));
+  setNewsFiltersAct_->setToolTip(tr("Manage and edit news filter rules"));
   setFilterNewsAct_->setText(tr("Filter News..."));
 
   optionsAct_->setText(tr("Options..."));

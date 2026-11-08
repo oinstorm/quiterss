@@ -203,7 +203,11 @@ void ItemCondition::updateListSummary()
 void ItemCondition::editContent()
 {
   ConditionContentDialog dlg(this, comboBox1_->currentText(),
-                             comboBox2_->currentText(), listMode_, content());
+                             comboBox2_->currentText(),
+                             comboBox1_->currentIndex(),
+                             comboBox2_->currentIndex(),
+                             listMode_, content(),
+                             tr("https://example.com/news/123"));
   if (dlg.exec() == QDialog::Accepted) {
     setContent(dlg.content(), dlg.isListMode());
     emit signalConditionChanged();

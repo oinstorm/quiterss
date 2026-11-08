@@ -183,7 +183,7 @@ void NewsTabWidget::createNewsList()
   QString actionListStr = "markNewsRead,markAllNewsRead,Separator,markStarAct,"
                           "newsLabelAction,shareMenuAct,openInExternalBrowserAct,Separator,"
                           "nextUnreadNewsAct,prevUnreadNewsAct,Separator,"
-                          "newsFilter,Separator,deleteNewsAct";
+                          "newsFilter,setNewsFiltersAct,Separator,deleteNewsAct";
   QString str = settings.value("Settings/newsToolBar", actionListStr).toString();
 
   foreach (QString actionStr, str.split(",", QString::SkipEmptyParts)) {

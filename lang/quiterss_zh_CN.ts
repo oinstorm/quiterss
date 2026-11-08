@@ -1686,6 +1686,10 @@ Ancient news could reappear</source>
         <translation>消息筛选器...</translation>
     </message>
     <message>
+        <source>Manage and edit news filter rules</source>
+        <translation>管理并编辑消息筛选规则</translation>
+    </message>
+    <message>
         <location filename="../src/application/mainwindow.cpp" line="4895"/>
         <source>Filter News...</source>
         <translation>筛选消息...</translation>
@@ -4647,6 +4651,74 @@ Ancient news could reappear</source>
     <message>
         <source>Please enter a value.</source>
         <translation>请输入一个值。</translation>
+    </message>
+    <message>
+        <source>Test...</source>
+        <translation>测试...</translation>
+    </message>
+    <message>
+        <source>Check a sample text against these conditions</source>
+        <translation>用示例文本检验当前条件</translation>
+    </message>
+    <message>
+        <source>Sample text:</source>
+        <translation>示例文本：</translation>
+    </message>
+    <message>
+        <source>Paste a link, for example: %1</source>
+        <translation>粘贴一个链接，例如：%1</translation>
+    </message>
+    <message>
+        <source>Paste the text that a news item should contain</source>
+        <translation>粘贴一条消息中可能出现的文本</translation>
+    </message>
+    <message>
+        <source>MATCHED</source>
+        <translation>符合</translation>
+    </message>
+    <message>
+        <source>NOT MATCHED</source>
+        <translation>不符合</translation>
+    </message>
+    <message>
+        <source>Enter a sample text to test this condition.</source>
+        <translation>输入示例文本以测试此条件。</translation>
+    </message>
+    <message>
+        <source>No value to test.</source>
+        <translation>没有可测试的值。</translation>
+    </message>
+    <message>
+        <source>Invalid condition:</source>
+        <translation>条件无效：</translation>
+    </message>
+    <message>
+        <source>The sample does not meet this condition.</source>
+        <translation>示例文本不符合此条件。</translation>
+    </message>
+    <message>
+        <source>None of the %1 values match.</source>
+        <translation>%1 个值全部不匹配。</translation>
+    </message>
+    <message>
+        <source>The sample meets this condition.</source>
+        <translation>示例文本符合此条件。</translation>
+    </message>
+    <message>
+        <source>%1 of %2 values match: %3</source>
+        <translation>%2 个值中有 %1 个匹配：%3</translation>
+    </message>
+    <message>
+        <source>Unsupported condition for this field.</source>
+        <translation>该字段不支持此条件。</translation>
+    </message>
+    <message>
+        <source>Regular expression error at %1: %2</source>
+        <translation>正则表达式在位置 %1 出错：%2</translation>
+    </message>
+    <message>
+        <source>Regular expression error: %1</source>
+        <translation>正则表达式错误：%1</translation>
     </message>
 </context>
 </TS>

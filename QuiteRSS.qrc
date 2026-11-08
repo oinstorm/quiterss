@@ -24,6 +24,7 @@
         <file alias="imagesOn">images/imagesOn.png</file>
         <file alias="importFeeds">images/ImportFeeds.png</file>
         <file alias="filterOff">images/filterOff.png</file>
+        <file alias="filterRules">images/filterRules.png</file>
         <file alias="quiterss16">images/16x16/quiterss.png</file>
         <file alias="exportFeeds">images/exportFeeds.png</file>
         <file alias="add">images/add.png</file>

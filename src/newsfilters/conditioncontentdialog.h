@@ -33,26 +33,49 @@ public:
   explicit ConditionContentDialog(QWidget *parent,
                                   const QString &fieldText,
                                   const QString &conditionText,
+                                  int fieldIndex,
+                                  int conditionIndex,
                                   bool listMode,
-                                  const QString &content);
+                                  const QString &content,
+                                  const QString &urlLiteral = QString());
 
   QString content() const;
   bool isListMode() const;
 
+  /** Check whether a single value would match the given sample text.
+   *  Uses exactly the same field/condition indexes as the news filter engine,
+   *  so it also validates regular expressions. Returns false and sets
+   *  errorText when the condition itself is invalid or unsupported. */
+  static bool testMatch(int fieldIndex, int conditionIndex,
+                        const QString &value, const QString &sample,
+                        QString *errorText = 0);
+
 private slots:
   void updateCount();
+  void toggleTestPanel(bool visible);
+  void runTest();
   void acceptDialog();
   void closeDialog();
 
 private:
   QStringList cleanedItems() const;
+  void showTestResult(bool matched, const QString &detail);
 
   bool listMode_;
   QString content_;
+  QString fieldText_;
+  QString conditionText_;
+  int fieldIndex_;
+  int conditionIndex_;
 
   QPlainTextEdit *textEdit_;
   QCheckBox *listModeCheckBox_;
   QLabel *countLabel_;
+
+  QToolButton *testToggleButton_;
+  QWidget *testPanel_;
+  QPlainTextEdit *sampleEdit_;
+  QLabel *testResultLabel_;
 };
 
 #endif // CONDITIONCONTENTDIALOG_H
