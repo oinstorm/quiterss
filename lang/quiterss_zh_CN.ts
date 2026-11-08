@@ -1383,6 +1383,18 @@ Ancient news could reappear</source>
         <source>Regular expressions</source>
         <translation>正则表达式</translation>
     </message>
+    <message>
+        <source>Edit content in a large editor</source>
+        <translation>在大编辑框中编辑内容</translation>
+    </message>
+    <message>
+        <source>%1 items</source>
+        <translation>%1 条</translation>
+    </message>
+    <message>
+        <source>Empty list</source>
+        <translation>空列表</translation>
+    </message>
 </context>
 <context>
     <name>LabelDialog</name>
@@ -4596,6 +4608,45 @@ Ancient news could reappear</source>
         <location filename="../src/updateappdialog.cpp" line="153"/>
         <source>Error checking updates</source>
         <translation>检查更新出错</translation>
+    </message>
+</context>
+<context>
+    <name>ConditionContentDialog</name>
+    <message>
+        <source>Edit Condition Content</source>
+        <translation>编辑条件内容</translation>
+    </message>
+    <message>
+        <source>Field: %1    Condition: %2</source>
+        <translation>字段：%1    条件：%2</translation>
+    </message>
+    <message>
+        <source>List mode (one value per line)</source>
+        <translation>列表模式（每行一个值）</translation>
+    </message>
+    <message>
+        <source>One value per line, for example:\nkeyword1\nkeyword2</source>
+        <translation>每行一个值，例如：\n关键词1\n关键词2</translation>
+    </message>
+    <message>
+        <source>Enter a value</source>
+        <translation>输入一个值</translation>
+    </message>
+    <message>
+        <source>Valid items: %1 (blank lines and duplicates are removed)</source>
+        <translation>有效条目：%1（保存时自动去除空行与重复项）</translation>
+    </message>
+    <message>
+        <source>Single value; line breaks are converted to spaces.</source>
+        <translation>单个值；换行会转换为空格。</translation>
+    </message>
+    <message>
+        <source>Please enter at least one value.</source>
+        <translation>请至少输入一个值。</translation>
+    </message>
+    <message>
+        <source>Please enter a value.</source>
+        <translation>请输入一个值。</translation>
     </message>
 </context>
 </TS>

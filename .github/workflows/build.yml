@@ -55,6 +55,7 @@ jobs:
             mingw-w64-x86_64-angleproject
             mingw-w64-x86_64-qt5-base
             mingw-w64-x86_64-qt5-tools
+            mingw-w64-x86_64-qt5-translations
             mingw-w64-x86_64-qtwebkit
             mingw-w64-x86_64-sqlite3
 
@@ -93,10 +94,29 @@ jobs:
           copy_runtime
           copy_runtime
 
+          # OpenSSL is loaded at runtime by Qt5Network, so ldd does not see it.
+          cp -n /mingw64/bin/libssl-*.dll /mingw64/bin/libcrypto-*.dll dist/ 2>/dev/null || true
+
+          # Application data files: translations, styles, sounds, web widgets.
+          mkdir -p dist/lang
+          cp -n _build/release/target/lang/*.qm dist/lang/ 2>/dev/null || true
+          cp -n /mingw64/share/qt5/translations/qtbase_*.qm dist/lang/ 2>/dev/null || true
+          cp -rn style dist/ 2>/dev/null || true
+          cp -rn sound dist/ 2>/dev/null || true
+          cp -rn html dist/ 2>/dev/null || true
+
           # Critical GCC runtime DLLs must be present or the app cannot start.
           for dll in libstdc++-6.dll libgcc_s_seh-1.dll libwinpthread-1.dll; do
             if [ ! -f "dist/$dll" ]; then
               echo "ERROR: missing $dll"
+              exit 1
+            fi
+          done
+
+          # TLS and translation files required at runtime.
+          for f in libssl-3-x64.dll libcrypto-3-x64.dll lang/quiterss_zh_CN.qm; do
+            if [ ! -f "dist/$f" ]; then
+              echo "ERROR: missing $f"
               exit 1
             fi
           done
