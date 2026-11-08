@@ -78,6 +78,8 @@
         <file>images/email.png</file>
         <file>images/tab_go.png</file>
         <file alias="copy">images/page_copy.png</file>
+        <file alias="copyTitle">images/copyTitle.png</file>
+        <file alias="copyText">images/copyText.png</file>
         <file alias="bulletMinus">images/bullet_toggle_minus.png</file>
         <file alias="bulletPlus">images/bullet_toggle_plus.png</file>
         <file>images/flash.png</file>

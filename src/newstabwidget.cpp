@@ -26,6 +26,7 @@
 #include <qt_windows.h>
 #endif
 #include <qzregexp.h>
+#include <QTextDocumentFragment>
 
 NewsTabWidget::NewsTabWidget(QWidget *parent, TabType type, int feedId, int feedParId)
   : QWidget(parent)
@@ -1492,6 +1493,8 @@ void NewsTabWidget::updateWebView(QModelIndex index)
       authorString.append(QString("<table class=\"labels\" id=\"labels%1\"><tr>%2</tr></table>").
                           arg(newsId).arg(labelsString));
 
+      authorString.append(htmlCopyActions(newsId));
+
       QString enclosureStr;
       QString enclosureUrl = newsModel_->dataField(index.row(), "enclosure_url").toString();
 
@@ -1753,6 +1756,8 @@ void NewsTabWidget::loadNewspaper(int refresh)
       QString labelsString = getHtmlLabels(index.row());
       authorString.append(QString("<table class=\"labels\" id=\"labels%1\"><tr>%2</tr></table>").
                           arg(newsId).arg(labelsString));
+
+      authorString.append(htmlCopyActions(newsId));
 
       QString enclosureStr;
       QString enclosureUrl = newsModel_->dataField(index.row(), "enclosure_url").toString();
@@ -2875,6 +2880,18 @@ QString NewsTabWidget::getHtmlLabels(int row)
   return labelsString;
 }
 
+QString NewsTabWidget::htmlCopyActions(const QString &newsId) const
+{
+  return QString(
+        " <a href=\"quiterss://copy.title.ui?#%1\" title=\"%2\">"
+        "<img class='quiterss-img' src='qrc:/images/copyTitle'/></a>"
+        " <a href=\"quiterss://copy.text.ui?#%1\" title=\"%3\">"
+        "<img class='quiterss-img' src='qrc:/images/copyText'/></a>")
+      .arg(newsId)
+      .arg(tr("Copy Title"))
+      .arg(tr("Copy Full Text"));
+}
+
 void NewsTabWidget::actionNewspaper(QUrl url)
 {
   QString newsId = url.fragment();
@@ -2957,6 +2974,22 @@ void NewsTabWidget::actionNewspaper(QUrl url)
       if (!newsItem.isNull()) {
         newsItem.removeFromDocument();
       }
+    } else if (url.host() == "copy.title.ui") {
+      const int row = indexList.first().row();
+      QApplication::clipboard()->setText(
+            newsModel_->dataField(row, "title").toString());
+      QToolTip::showText(QCursor::pos(), tr("Copied"));
+    } else if (url.host() == "copy.text.ui") {
+      const int row = indexList.first().row();
+      QString content = newsModel_->dataField(row, "content").toString();
+      if (!content.contains(QzRegExp("<html(.*)</html>", Qt::CaseInsensitive))) {
+        QString description = newsModel_->dataField(row, "description").toString();
+        if (content.isEmpty() || (description.length() > content.length()))
+          content = description;
+      }
+      QApplication::clipboard()->setText(
+            QTextDocumentFragment::fromHtml(content).toPlainText().trimmed());
+      QToolTip::showText(QCursor::pos(), tr("Copied"));
     }
   }
 }

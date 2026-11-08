@@ -95,6 +95,7 @@ public:
   void loadNewspaper(int refresh = RefreshAll);
   void hideWebContent();
   QString getLinkNews(int row);
+  QString htmlCopyActions(const QString &newsId) const;
 
   void reduceNewsList();
   void increaseNewsList();

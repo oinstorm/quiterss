@@ -2911,6 +2911,18 @@ Ancient news could reappear</source>
         <source>Delete</source>
         <translation>删除</translation>
     </message>
+    <message>
+        <source>Copy Title</source>
+        <translation>复制标题</translation>
+    </message>
+    <message>
+        <source>Copy Full Text</source>
+        <translation>复制全文</translation>
+    </message>
+    <message>
+        <source>Copied</source>
+        <translation>已复制</translation>
+    </message>
 </context>
 <context>
     <name>NotificationWidget</name>
