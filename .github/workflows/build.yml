@@ -69,9 +69,39 @@ jobs:
       - name: Package
         shell: msys2 {0}
         run: |
+          set -e
           mkdir -p dist
           cp _build/release/target/QuiteRSS.exe dist/
-          windeployqt-qt5 --release dist/QuiteRSS.exe
+          windeployqt-qt5 --release --dir dist dist/QuiteRSS.exe
+
+          # QtWebKit out-of-process helpers (if present in this QtWebKit build)
+          for exe in QtWebProcess.exe QtWebNetworkProcess.exe QtWebStorageProcess.exe; do
+            if [ -f "/mingw64/bin/$exe" ]; then cp -n "/mingw64/bin/$exe" dist/; fi
+          done
+
+          # Collect every non-system MinGW runtime DLL that the app and the
+          # deployed Qt DLLs depend on, and put it next to the executable.
+          # This covers libstdc++-6.dll, libgcc_s_seh-1.dll, libwinpthread-1.dll,
+          # ICU, zlib and friends.
+          copy_runtime() {
+            find dist -type f \( -name "*.exe" -o -name "*.dll" \) | while read -r f; do
+              ldd "$f" 2>/dev/null | awk '/=> \/mingw64\/bin\// {print $3}'
+            done | sort -u | while read -r dll; do
+              cp -n "$dll" dist/ 2>/dev/null || true
+            done
+          }
+          copy_runtime
+          copy_runtime
+
+          # Critical GCC runtime DLLs must be present or the app cannot start.
+          for dll in libstdc++-6.dll libgcc_s_seh-1.dll libwinpthread-1.dll; do
+            if [ ! -f "dist/$dll" ]; then
+              echo "ERROR: missing $dll"
+              exit 1
+            fi
+          done
+
+          ls -la dist
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
